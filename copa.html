@@ -1,127 +1,26 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<title>Simulador de Copa - Física de Jogo</title>
-<style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #020617;
-    color: white;
-    text-align: center;
-}
-
-h1 { color: #facc15; margin: 10px; }
-
-.container {
-    max-width: 900px;
-    margin: auto;
-}
-
-input {
-    margin: 5px;
-    padding: 8px;
-    width: 120px;
-    border-radius: 6px;
-    border: none;
-}
-
-button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 8px;
-    background: #22c55e;
-    color: white;
-    cursor: pointer;
-}
-
-.field {
-    position: relative;
-    margin: 20px auto;
-    width: 600px;
-    height: 300px;
-    background: linear-gradient(90deg, #166534 50%, #15803d 50%);
-    border: 3px solid white;
-    overflow: hidden;
-    border-radius: 10px;
-}
-
-.goal {
-    position: absolute;
-    width: 60px;
-    height: 120px;
-    top: 50%;
-    transform: translateY(-50%);
-    border: 3px solid white;
-}
-
-.goal.left { left: 0; }
-.goal.right { right: 0; }
-
-.ball {
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: white;
-    box-shadow: 0 0 10px white;
-}
-
-.score {
-    margin-top: 10px;
-    font-size: 18px;
-}
-
-.log {
-    margin-top: 10px;
-    background: #0f172a;
-    padding: 10px;
-    border-radius: 10px;
-    min-height: 60px;
-}
-</style>
-</head>
-<body>
-
-<h1>🏆 Simulador de Futebol (Física + Gols)</h1>
-
-<div class="container">
-    <div>
-        <input placeholder="Time A" id="a">
-        <input placeholder="Time B" id="b">
-        <button onclick="startMatch()">Iniciar Partida</button>
-    </div>
-
-    <div class="field" id="field">
-        <div class="goal left"></div>
-        <div class="goal right"></div>
-        <div class="ball" id="ball"></div>
-    </div>
-
-    <div class="score" id="score">0 x 0</div>
-    <div class="log" id="log">Pressione iniciar</div>
-
-    <p>Depois do jogo, pressione ENTER para próxima partida</p>
-</div>
-
-<script>
 let x, y, vx, vy;
 let interval;
 let running = false;
+
 let scoreA = 0;
 let scoreB = 0;
+
 let time = 0;
 let finished = false;
 
-const field = document.getElementById("field");
 const ball = document.getElementById("ball");
 
 function resetBall() {
     x = 300;
     y = 150;
-    vx = (Math.random() * 4 + 2) * (Math.random() < 0.5 ? -1 : 1);
-    vy = (Math.random() * 4 + 2) * (Math.random() < 0.5 ? -1 : 1);
+
+    vx = (Math.random() * 3 + 2) * (Math.random() < 0.5 ? -1 : 1);
+    vy = (Math.random() * 3 + 2) * (Math.random() < 0.5 ? -1 : 1);
+}
+
+/* 🎯 controle de chance de gol (IMPORTANTE) */
+function chanceGol() {
+    return Math.random() < 0.012; // baixa chance → média ~1–2 gols por time
 }
 
 function updateBall() {
@@ -131,18 +30,17 @@ function updateBall() {
     x += vx;
     y += vy;
 
-    // colisão paredes
+    // quique em cima/baixo
     if (y <= 0 || y >= h - 18) vy *= -1;
 
-    // GOL ESQUERDA (time B)
-    if (x <= 0) {
+    /* ⚽ tentativa de gol (controlada) */
+    if (chanceGol() && x < 30) {
         scoreB++;
         log("⚽ GOL DO TIME B!");
         resetBall();
     }
 
-    // GOL DIREITA (time A)
-    if (x >= w - 18) {
+    if (chanceGol() && x > w - 30) {
         scoreA++;
         log("⚽ GOL DO TIME A!");
         resetBall();
@@ -168,10 +66,10 @@ function startMatch() {
     time = 0;
     finished = false;
 
-    log("Partida começou!");
+    log("🔥 Partida iniciada!");
     updateScore();
-    resetBall();
 
+    resetBall();
     running = true;
 
     interval = setInterval(() => {
@@ -180,7 +78,8 @@ function startMatch() {
 
         time++;
 
-        if (time > 3000) { // ~30 segundos
+        /* ⏱️ 30 segundos reais */
+        if (time >= 3000) {
             endMatch();
         }
 
@@ -192,11 +91,15 @@ function endMatch() {
     running = false;
 
     if (scoreA === scoreB) {
-        log("EMPATE! Indo para PÊNALTIS...");
-        setTimeout(penaltis, 1500);
+        log("🥶 Empate! Indo para pênaltis...");
+        setTimeout(penaltis, 1200);
     } else {
-        const winner = scoreA > scoreB ? document.getElementById("a").value : document.getElementById("b").value;
-        log("🏆 FIM DE JOGO! Vencedor: " + winner);
+        const winner =
+            scoreA > scoreB
+                ? document.getElementById("a").value
+                : document.getElementById("b").value;
+
+        log(`🏆 Fim de jogo! ${winner} venceu`);
     }
 
     finished = true;
@@ -206,18 +109,21 @@ function penaltis() {
     let pa = 0, pb = 0;
 
     for (let i = 0; i < 5; i++) {
-        if (Math.random() > 0.5) pa++;
-        if (Math.random() > 0.5) pb++;
+        if (Math.random() < 0.7) pa++;
+        if (Math.random() < 0.7) pb++;
     }
 
     if (pa === pb) {
-        pa += Math.random() > 0.5 ? 1 : 0;
-        pb += pa === pb ? 0 : 1;
+        if (Math.random() > 0.5) pa++;
+        else pb++;
     }
 
-    const winner = pa > pb ? document.getElementById("a").value : document.getElementById("b").value;
+    const winner =
+        pa > pb
+            ? document.getElementById("a").value
+            : document.getElementById("b").value;
 
-    log(`🥅 PÊNALTIS: ${pa} x ${pb} — 🏆 ${winner}`);
+    log(`🥅 Pênaltis: ${pa} x ${pb} — 🏆 ${winner}`);
 }
 
 document.addEventListener("keydown", (e) => {
@@ -225,7 +131,3 @@ document.addEventListener("keydown", (e) => {
         log("Pronto para próxima partida");
     }
 });
-</script>
-
-</body>
-</html>
